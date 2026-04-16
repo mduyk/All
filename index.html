@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>ADMIN V10 - FINAL FIX</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root { --blue: #0f3460; --pink: #e94560; --bg: #1a1a2e; --green: #0f9d58; }
+        body { font-family: sans-serif; background: var(--bg); color: #fff; padding: 20px; margin: 0; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .tab-btn { background: #333; color: #fff; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; font-weight: bold; }
+        .tab-btn.active { background: var(--pink); }
+        .box { background: #16213e; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; background: var(--blue); border: 1px solid #333; color: #fff; border-radius: 5px; box-sizing: border-box; outline: none; }
+        button { background: var(--pink); color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 5px; font-weight: bold; transition: 0.3s; }
+        button:hover { opacity: 0.8; } button:disabled { background: #555; cursor: not-allowed; }
+        .grid-acc { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 15px; }
+        .item-acc { background: var(--blue); padding: 8px; border-radius: 8px; text-align: center; border: 1px solid #444; }
+        .item-acc img { width: 100%; border-radius: 5px; height: 90px; object-fit: cover; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border: 1px solid #333; text-align: left; font-size: 14px; }
+        .tab-content { display: none; } .tab-content.active { display: block; }
+        .loader { display: none; color: var(--gold); font-style: italic; margin-left: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2 style="color: var(--pink); text-align: center; letter-spacing: 1px;">DELTA MANAGEMENT PRO V10</h2>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="tab('key')">QUẢN LÝ KEY</button>
+        <button class="tab-btn" onclick="tab('acc')">QUẢN LÝ DANH MỤC ACC</button>
+        <button class="tab-btn" onclick="tab('bank')">DUYỆT NẠP TIỀN</button>
+    </div>
+
+    <div id="key" class="tab-content active">
+        <div class="box">
+            <h3>UP KEY (TỰ LỌC TRÙNG)</h3>
+            <div style="display: flex; gap: 10px;">
+                <select id="k-shop"><option value="shop1">Shop 1</option><option value="shop2">Shop 2</option></select>
+                <select id="k-type"><option value="ngay">Ngày</option><option value="tuan">Tuần</option><option value="thang">Tháng</option><option value="nam">Năm</option></select>
+            </div>
+            <textarea id="k-raw" rows="8" placeholder="Nhập danh sách key (mỗi gói 1 dòng)..."></textarea>
+            <button onclick="addKey()">XÁC NHẬN UP KEY</button>
+        </div>
+    </div>
+
+    <div id="acc" class="tab-content">
+        <div class="box">
+            <h3>TẠO DANH MỤC MỚI</h3>
+            <input type="text" id="cat-name" placeholder="Tên mục (FF Siêu Phẩm, Proxy...)">
+            <label style="font-size: 13px; color: #aaa;">Ảnh đại diện danh mục:</label>
+            <input type="file" id="cat-thumb" accept="image/*">
+            <button onclick="upCat()">XÁC NHẬN TẠO</button>
+        </div>
+        <div class="box">
+            <h3>QUẢN LÝ SẢN PHẨM TRONG MỤC</h3>
+            <select id="sel-cat" onchange="loadA(this.value)"><option value="">-- Chọn danh mục --</option></select>
+            <div id="acc-manage" style="display:none; margin-top:15px; border-top: 1px solid #333; padding-top: 15px;">
+                <button id="btn-show-form" style="background:var(--green)" onclick="document.getElementById('f-acc').style.display='block'; document.getElementById('btn-show-form').style.display='none'">+ THÊM SẢN PHẨM</button>
+                
+                <div id="f-acc" style="display:none; padding:15px; background:#0b2239; border-radius:8px; margin-bottom: 15px;">
+                    <h4 style="margin-top:0;">Đăng Acc Mới</h4>
+                    <label style="font-size: 13px; color: #aaa;">Ảnh đại diện (1 ảnh):</label>
+                    <input type="file" id="a-thumb" accept="image/*">
+                    <label style="font-size: 13px; color: #aaa;">Ảnh mô tả chi tiết (Chọn nhiều ảnh):</label>
+                    <input type="file" id="a-imgs" accept="image/*" multiple>
+                    <input type="number" id="a-price" placeholder="Nhập giá bán (VNĐ)...">
+                    <textarea id="a-info" placeholder="Mô tả acc (trắng thông tin, skin hiếm...)"></textarea>
+                    
+                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                        <button id="btn-submit-acc" onclick="upAcc()">ĐĂNG SẢN PHẨM</button>
+                        <button style="background:#555" onclick="document.getElementById('f-acc').style.display='none'; document.getElementById('btn-show-form').style.display='block'">HỦY</button>
+                        <span class="loader" id="acc-load">Đang xử lý...</span>
+                    </div>
+                </div>
+                <div class="grid-acc" id="list-a"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="bank" class="tab-content">
+        <div class="box">
+            <h3>PHÊ DUYỆT NẠP</h3>
+            <table id="bank-table">
+                <thead><tr><th>User</th><th>Số tiền</th><th>Shop</th><th>Thời gian</th><th>Lệnh</th></tr></thead>
+                <tbody id="b-list"></tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+    const config = { apiKey: "AIzaSyBk6R1TDZeAxh37JQLgL_6Wl0v8m8Sg0", databaseURL: "https://shopctv-61f96-default-rtdb.asia-southeast1.firebasedatabase.app/" };
+    firebase.initializeApp(config); const db = firebase.database();
+
+    function tab(id) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    // --- LOGIC KEY ---
+    function addKey() {
+        const t = document.getElementById('k-type').value, s = document.getElementById('k-shop').value, r = document.getElementById('k-raw').value.trim();
+        if(!r) return alert("Sếp nhập key vào đã!");
+        const ls = r.split('\n').map(x => x.trim()).filter(x => x !== "");
+        db.ref(`keys/${s}/${t}`).once('value', sn => {
+            let cur = sn.exists() ? Object.values(sn.val()) : [];
+            let count = 0;
+            ls.forEach(k => { if(!cur.includes(k)) { db.ref(`keys/${s}/${t}`).push(k); cur.push(k); count++; } });
+            alert(`Xong! Đã thêm ${count} key mới.`); document.getElementById('k-raw').value = "";
+        });
+    }
+
+    const toB64 = f => new Promise(r => { const rd = new FileReader(); rd.readAsDataURL(f); rd.onload = () => r(rd.result); });
+
+    db.ref('categories').on('value', s => {
+        const el = document.getElementById('sel-cat'); el.innerHTML = '<option value="">-- Chọn danh mục --</option>';
+        s.forEach(c => el.innerHTML += `<option value="${c.key}">${c.val().name}</option>`);
+    });
+
+    // --- LOGIC DANH MỤC ---
+    async function upCat() {
+        const n = document.getElementById('cat-name').value, f = document.getElementById('cat-thumb').files[0];
+        if(!n || !f) return alert("Sếp nhập thiếu tên hoặc ảnh mục!");
+        const i = await toB64(f);
+        db.ref('categories').push({ name: n, img: i }).then(() => { alert("Đã tạo danh mục thành công!"); document.getElementById('cat-name').value = ""; document.getElementById('cat-thumb').value = ""; });
+    }
+
+    function loadA(id) {
+        if(!id) return document.getElementById('acc-manage').style.display='none';
+        document.getElementById('acc-manage').style.display='block';
+        db.ref('products/'+id).on('value', s => {
+            const d = document.getElementById('list-a'); d.innerHTML = "";
+            s.forEach(a => {
+                const data = a.val();
+                if(data.status !== 'Đã bán') {
+                    d.innerHTML += `<div class="item-acc"><img src="${data.thumb}"><p>${Number(data.price).toLocaleString()}đ</p><button style="font-size:11px; padding:5px 10px;" onclick="delA('${id}','${a.key}')">Xóa</button></div>`;
+                }
+            });
+        });
+    }
+
+    // --- LOGIC ĐĂNG ACC (FIX THÔNG BÁO & KIỂM TRA) ---
+    async function upAcc() {
+        const id = document.getElementById('sel-cat').value;
+        const p = document.getElementById('a-price').value;
+        const info = document.getElementById('a-info').value;
+        const thumbFile = document.getElementById('a-thumb').files[0];
+        const imgsFiles = document.getElementById('a-imgs').files;
+        const btn = document.getElementById('btn-submit-acc');
+        const loader = document.getElementById('acc-load');
+
+        // 1. Validator: Kiểm tra đầu vào
+        if(!thumbFile) return alert("Sếp ơi, chưa chọn Ảnh đại diện!");
+        if(imgsFiles.length === 0) return alert("Sếp ơi, phải up ít nhất 1 ảnh mô tả chi tiết!");
+        if(!p || p <= 0) return alert("Sếp nhập giá bán sai rồi!");
+        if(!info) return alert("Sếp nhập mô tả acc đi khách mới mua!");
+
+        // 2. Hiện thông báo đang xử lý, khóa nút
+        btn.disabled = true; loader.style.display = 'inline';
+
+        try {
+            // 3. Chuyển đổi ảnh
+            const thumbB64 = await toB64(thumbFile);
+            let imgsArr = []; for(let f of imgsFiles) { imgsArr.push(await toB64(f)); }
+
+            // 4. Up lên Firebase
+            db.ref('products/'+id).push({ price: p, info: info, thumb: thumbB64, imgs: imgsArr, status: 'Còn hàng' }).then(() => {
+                // 5. Thông báo thành công, reset form
+                alert("Đăng tài khoản thành công! Sếp check trên shop nhé.");
+                document.getElementById('f-acc').style.display = 'none';
+                document.getElementById('btn-show-form').style.display = 'block';
+                document.getElementById('a-price').value = ""; document.getElementById('a-info').value = "";
+                document.getElementById('a-thumb').value = ""; document.getElementById('a-imgs').value = "";
+                btn.disabled = false; loader.style.display = 'none';
+            }).catch(e => {
+                // 6. Thông báo thất bại
+                alert("Lỗi! Đăng acc thất bại sếp ơi. Thử lại sau hoặc báo Admin nhé.");
+                console.error(e); btn.disabled = false; loader.style.display = 'none';
+            });
+        } catch(e) {
+            alert("Lỗi xử lý ảnh! Thử up ảnh nhẹ hơn xem sếp.");
+            btn.disabled = false; loader.style.display = 'none';
+        }
+    }
+
+    function delA(c, a) { if(confirm("Xóa sản phẩm này?")) db.ref(`products/${c}/${a}`).remove(); }
+
+    // --- LOGIC BANK ---
+    db.ref('bank_requests').on('value', s => {
+        const l = document.getElementById('b-list'); l.innerHTML = "";
+        s.forEach(r => {
+            const d = r.val(); if(d.status === 'Pending') 
+            l.innerHTML += `<tr><td>${d.user}</td><td>${Number(d.amount).toLocaleString()}đ</td><td>${d.shop}</td><td>${d.time}</td><td><button style="background:var(--green); font-size:12px; padding:6px 12px;" onclick="appr('${d.id}','${d.user}','${d.amount}','${d.shop}')">Duyệt</button></td></tr>`;
+        });
+    });
+
+    function appr(id, u, a, s) {
+        db.ref(`${s}/${u}/balance`).transaction(b => (b || 0) + Number(a));
+        db.ref(`history_pay/${u}/${id}/status`).set('Success');
+        db.ref(`bank_requests/${id}`).remove(); alert("Duyệt xong! Đã cộng tiền.");
+    }
+</script>
+</body>
+</html>
